@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity{
             LatLng ll = new LatLng(location.getLatitude(),location.getLongitude());
             MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
             baiduMap.animateMapStatus(update);
-            update = MapStatusUpdateFactory.zoomTo(16f);
+            update = MapStatusUpdateFactory.zoomTo(18f);
             baiduMap.animateMapStatus(update);
             isFirstLocate = false;
         }
