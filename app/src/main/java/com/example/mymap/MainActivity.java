@@ -30,6 +30,13 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.overlayutil.WalkingRouteOverlay;
+import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
+import com.baidu.mapapi.search.poi.PoiCitySearchOption;
+import com.baidu.mapapi.search.poi.PoiDetailResult;
+import com.baidu.mapapi.search.poi.PoiDetailSearchResult;
+import com.baidu.mapapi.search.poi.PoiIndoorResult;
+import com.baidu.mapapi.search.poi.PoiResult;
+import com.baidu.mapapi.search.poi.PoiSearch;
 import com.baidu.mapapi.search.route.BikingRouteResult;
 import com.baidu.mapapi.search.route.DrivingRouteResult;
 import com.baidu.mapapi.search.route.IndoorRouteResult;
@@ -41,6 +48,8 @@ import com.baidu.mapapi.search.route.TransitRouteResult;
 import com.baidu.mapapi.search.route.WalkingRouteLine;
 import com.baidu.mapapi.search.route.WalkingRoutePlanOption;
 import com.baidu.mapapi.search.route.WalkingRouteResult;
+import com.baidu.mapapi.search.sug.SuggestionResult;
+import com.baidu.mapapi.search.poi.PoiSearch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,19 +58,27 @@ public class MainActivity extends AppCompatActivity{
     public LocationClient mLocationClient;
     public LatLng stLoc;
     public LatLng enLoc;
+    public LatLng tempLoc;
+    public double x1;
+    public double x2;
+    public double y1;
+    public double y2;
+    public int z = 0;
     public WalkingRouteOverlay overlay;
-    public int i = 0;
     private String City;
-    private double mlatitude;
-    private double mlongitude;
     private ScrollView scrollView;
     private MapContainer map_container;
     private MapView mapView;
     private TextView positionText;
     private BaiduMap baiduMap;
+    private PoiCitySearchOption citySearchOption;
+    private PoiSearch poiSearch;
     private RoutePlanSearch mSearch;
 	private LocationClientOption mOption;
     private boolean isFirstLocate = true;
+//    public int i = 0;
+//    private double mlatitude;
+//    private double mlongitude;
 
     @Override
     protected void onCreate(Bundle saveInstanceState){
@@ -81,9 +98,9 @@ public class MainActivity extends AppCompatActivity{
         scrollView = (ScrollView) findViewById(R.id.scrollview);
         map_container = (MapContainer) findViewById(R.id.map_container);
         map_container.setScrollView(scrollView);
-
         Button button1 = (Button)findViewById(R.id.check_button);
         Button button2 = (Button)findViewById(R.id.daohang_button);
+        Button button3 = (Button)findViewById(R.id.qingchu_button);
         //注册按钮监听
         button1.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -96,6 +113,13 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View view) {
                 qujingzheyue(view);
+            }
+        });
+
+        button3.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                overlay.removeFromMap();
             }
         });
         baiduMap = mapView.getMap();
@@ -218,13 +242,13 @@ public class MainActivity extends AppCompatActivity{
                 currentPosition.append("网络");
             }
             City = location.getCity();
-            mlatitude = location.getLatitude();
-            mlongitude = location.getLongitude();
+//            mlatitude = location.getLatitude();
+//            mlongitude = location.getLongitude();
             positionText.setText(currentPosition);
 
         }
     }
-
+    //经纬度定位
     public void yingjichangkong(View view){
         EditText editText1 = (EditText)findViewById(R.id.weidu_edit);
         EditText editText2 = (EditText)findViewById(R.id.jingdu_edit);
@@ -251,28 +275,17 @@ public class MainActivity extends AppCompatActivity{
         update = MapStatusUpdateFactory.zoomTo(16f);
         baiduMap.animateMapStatus(update);
     }
-
+    //路线规划
     public void qujingzheyue(final View view){
-        if(i == 0){
-            i = 1;
-        }
-        else{
-            i = 0;
-            overlay.removeFromMap();
-            return;
-        }
-
         EditText editText1 = (EditText)findViewById(R.id.chufa_edit);
         EditText editText2 = (EditText)findViewById(R.id.daoda_edit);
         String chufa = editText1.getText().toString();
         String daoda = editText2.getText().toString();
 
-//        if(chufa.isEmpty() == true || daoda.isEmpty() == true){
-//            Snackbar.make(view,"参数不能为空哦！",Snackbar.LENGTH_SHORT).show();
-//            return;
-//        }
-
-        //Snackbar.make(view,"A接拉起！",Snackbar.LENGTH_SHORT).show();
+        if(chufa.isEmpty() == true || daoda.isEmpty() == true){
+            Snackbar.make(view,"参数不能为空哦！",Snackbar.LENGTH_SHORT).show();
+            return;
+        }
 
         mSearch = RoutePlanSearch.newInstance();
         OnGetRoutePlanResultListener listener = new OnGetRoutePlanResultListener() {
@@ -286,54 +299,90 @@ public class MainActivity extends AppCompatActivity{
                 if (walkingRouteResult.getRouteLines().size() > 0) {
                     overlay.setData(walkingRouteResult.getRouteLines().get(0));
                     overlay.addToMap();
-
                 }
             }
             @Override
             public void onGetTransitRouteResult(TransitRouteResult transitRouteResult) {
 
             }
-
             @Override
             public void onGetMassTransitRouteResult(MassTransitRouteResult massTransitRouteResult) {
 
             }
-
             @Override
             public void onGetDrivingRouteResult(DrivingRouteResult drivingRouteResult) {
 
             }
-
             @Override
             public void onGetIndoorRouteResult(IndoorRouteResult indoorRouteResult) {
-
             }
-
             @Override
             public void onGetBikingRouteResult(BikingRouteResult bikingRouteResult) {
-
             }
-
-
         };
-        Log.d("MainActivity","即将设置监听");
         mSearch.setOnGetRoutePlanResultListener(listener);
-        Log.d("MainActivity","已经设置监听");
 
+        Log.d("MainActivity",""+chufa);
+        Log.d("MainActivity",""+daoda);
 
-        stLoc = new LatLng(mlatitude,mlongitude);
-        enLoc = new LatLng(41,112);
+        Citysearch(chufa,daoda);
+
+        stLoc = new LatLng(x1,y1);
+        enLoc = new LatLng(x2,y2);
+
         PlanNode stNode = PlanNode.withLocation(stLoc);
         PlanNode enNode = PlanNode.withLocation(enLoc);
 
-//        PlanNode stNode = PlanNode.withCityNameAndPlaceName("呼和浩特","恒大华府");
-//        PlanNode enNode = PlanNode.withCityNameAndPlaceName("呼和浩特","内蒙古农业大学东区");
-        Log.d("MainActivity","即将查询位置");
         mSearch.walkingSearch((new WalkingRoutePlanOption()).from(stNode).to(enNode));
-        Log.d("MainActivity","已经查询位置");
         mSearch.destroy();
 
     }
+    //获取所述地点经纬度
+    private void Citysearch(String chufa,String daoda){
+        OnGetPoiSearchResultListener onGetPoiSearchResultListener = new OnGetPoiSearchResultListener() {
+            @Override
+            public void onGetPoiResult(PoiResult poiResult) {
+                tempLoc = poiResult.getAllPoi().get(0).getLocation();
+                if(z == 0){
+                    x1 = tempLoc.latitude;
+                    y1 = tempLoc.longitude;
+                    Log.d("MainActivity","出发：");
+                    Log.d("MainActivity","x:"+x1);
+                    Log.d("MainActivity","y:"+y1);
+                    z = 1;
+                }
+                else if(z == 1){
+                    x2 = tempLoc.latitude;
+                    y2 = tempLoc.longitude;
+                    Log.d("MainActivity","到达：");
+                    Log.d("MainActivity","x:"+x2);
+                    Log.d("MainActivity","y:"+y2);
+                    z = 0;
+                }
 
+                return;
+            }
+            @Override
+            public void onGetPoiDetailResult(PoiDetailResult arg0) {
+                // TODO Auto-generated method stub
 
+            }
+            @Override
+            public void onGetPoiDetailResult(PoiDetailSearchResult poiDetailSearchResult) {
+
+            }
+            @Override
+            public void onGetPoiIndoorResult(PoiIndoorResult poiIndoorResult) {
+
+            }
+        };
+        poiSearch = PoiSearch.newInstance();
+        poiSearch.setOnGetPoiSearchResultListener(onGetPoiSearchResultListener);
+        citySearchOption = new PoiCitySearchOption();
+        citySearchOption.city(City);
+        citySearchOption.keyword(chufa);
+        poiSearch.searchInCity(citySearchOption);
+        citySearchOption.keyword(daoda);
+        poiSearch.searchInCity(citySearchOption);
+    }
 }

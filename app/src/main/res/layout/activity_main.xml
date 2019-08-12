@@ -179,9 +179,9 @@
                             android:layout_height="48dp"
                             android:textSize="16sp"
                             android:maxLines="1"
-                            android:editable="false"
-                            android:focusable="false"
-                            android:hint="我的位置"/>
+                            android:editable="true"
+                            android:focusable="true"
+                            android:hint="请输入出发地点..." />
 
                     </LinearLayout>
 
@@ -206,6 +206,7 @@
 
                     </LinearLayout>
 
+
                     <Button
                         android:id="@+id/daohang_button"
                         android:layout_width="wrap_content"
@@ -213,6 +214,14 @@
                         android:layout_gravity="right"
                         android:textSize="16sp"
                         android:text="规 划"/>
+
+                    <Button
+                        android:id="@+id/qingchu_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="right"
+                        android:text="清 除"
+                        android:textSize="16sp" />
 
                 </LinearLayout>
 
