@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,14 +29,33 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.overlayutil.WalkingRouteOverlay;
+import com.baidu.mapapi.search.route.BikingRouteResult;
+import com.baidu.mapapi.search.route.DrivingRouteResult;
+import com.baidu.mapapi.search.route.IndoorRouteResult;
+import com.baidu.mapapi.search.route.MassTransitRouteResult;
+import com.baidu.mapapi.search.route.OnGetRoutePlanResultListener;
+import com.baidu.mapapi.search.route.PlanNode;
 import com.baidu.mapapi.search.route.RoutePlanSearch;
-import com.baidu.mapapi.
+import com.baidu.mapapi.search.route.TransitRouteResult;
+import com.baidu.mapapi.search.route.WalkingRouteLine;
+import com.baidu.mapapi.search.route.WalkingRoutePlanOption;
+import com.baidu.mapapi.search.route.WalkingRouteResult;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity{
     public LocationClient mLocationClient;
+    public LatLng stLoc;
+    public LatLng enLoc;
+    public WalkingRouteOverlay overlay;
+    public int i = 0;
+    private String City;
+    private double mlatitude;
+    private double mlongitude;
+    private ScrollView scrollView;
+    private MapContainer map_container;
     private MapView mapView;
     private TextView positionText;
     private BaiduMap baiduMap;
@@ -58,6 +78,10 @@ public class MainActivity extends AppCompatActivity{
 
         positionText = (TextView)findViewById(R.id.position_text_view);
         mapView=(MapView)findViewById(R.id.bmapView);
+        scrollView = (ScrollView) findViewById(R.id.scrollview);
+        map_container = (MapContainer) findViewById(R.id.map_container);
+        map_container.setScrollView(scrollView);
+
         Button button1 = (Button)findViewById(R.id.check_button);
         Button button2 = (Button)findViewById(R.id.daohang_button);
         //注册按钮监听
@@ -186,12 +210,16 @@ public class MainActivity extends AppCompatActivity{
             currentPosition.append("市：").append(location.getCity()).append("\n");
             currentPosition.append("区：").append(location.getDistrict()).append("\n");
             currentPosition.append("街道：").append(location.getStreet()).append("\n");
+
             currentPosition.append("定位方式：");
             if(location.getLocType()==BDLocation.TypeGpsLocation){
                 currentPosition.append("GPS");
             }else if(location.getLocType()==BDLocation.TypeNetWorkLocation){
                 currentPosition.append("网络");
             }
+            City = location.getCity();
+            mlatitude = location.getLatitude();
+            mlongitude = location.getLongitude();
             positionText.setText(currentPosition);
 
         }
@@ -224,22 +252,86 @@ public class MainActivity extends AppCompatActivity{
         baiduMap.animateMapStatus(update);
     }
 
-    public void qujingzheyue(View view){
-
+    public void qujingzheyue(final View view){
+        if(i == 0){
+            i = 1;
+        }
+        else{
+            i = 0;
+            overlay.removeFromMap();
+            return;
+        }
 
         EditText editText1 = (EditText)findViewById(R.id.chufa_edit);
         EditText editText2 = (EditText)findViewById(R.id.daoda_edit);
         String chufa = editText1.getText().toString();
         String daoda = editText2.getText().toString();
 
-        if(chufa.isEmpty() == true || daoda.isEmpty() == true){
-            Snackbar.make(view,"参数不能为空哦！",Snackbar.LENGTH_SHORT).show();
-            return;
-        }
+//        if(chufa.isEmpty() == true || daoda.isEmpty() == true){
+//            Snackbar.make(view,"参数不能为空哦！",Snackbar.LENGTH_SHORT).show();
+//            return;
+//        }
 
-        Snackbar.make(view,"A接拉起！",Snackbar.LENGTH_SHORT).show();
+        //Snackbar.make(view,"A接拉起！",Snackbar.LENGTH_SHORT).show();
 
         mSearch = RoutePlanSearch.newInstance();
+        OnGetRoutePlanResultListener listener = new OnGetRoutePlanResultListener() {
+            @Override
+            public void onGetWalkingRouteResult(WalkingRouteResult walkingRouteResult) {
+                overlay = new WalkingRouteOverlay(baiduMap);
+                if(walkingRouteResult.getRouteLines()==null){
+                    Snackbar.make(view,"哦噢地图卖光了o(╥﹏╥)o",Snackbar.LENGTH_SHORT).show();
+                    return;
+                }
+                if (walkingRouteResult.getRouteLines().size() > 0) {
+                    overlay.setData(walkingRouteResult.getRouteLines().get(0));
+                    overlay.addToMap();
+
+                }
+            }
+            @Override
+            public void onGetTransitRouteResult(TransitRouteResult transitRouteResult) {
+
+            }
+
+            @Override
+            public void onGetMassTransitRouteResult(MassTransitRouteResult massTransitRouteResult) {
+
+            }
+
+            @Override
+            public void onGetDrivingRouteResult(DrivingRouteResult drivingRouteResult) {
+
+            }
+
+            @Override
+            public void onGetIndoorRouteResult(IndoorRouteResult indoorRouteResult) {
+
+            }
+
+            @Override
+            public void onGetBikingRouteResult(BikingRouteResult bikingRouteResult) {
+
+            }
+
+
+        };
+        Log.d("MainActivity","即将设置监听");
+        mSearch.setOnGetRoutePlanResultListener(listener);
+        Log.d("MainActivity","已经设置监听");
+
+
+        stLoc = new LatLng(mlatitude,mlongitude);
+        enLoc = new LatLng(41,112);
+        PlanNode stNode = PlanNode.withLocation(stLoc);
+        PlanNode enNode = PlanNode.withLocation(enLoc);
+
+//        PlanNode stNode = PlanNode.withCityNameAndPlaceName("呼和浩特","恒大华府");
+//        PlanNode enNode = PlanNode.withCityNameAndPlaceName("呼和浩特","内蒙古农业大学东区");
+        Log.d("MainActivity","即将查询位置");
+        mSearch.walkingSearch((new WalkingRoutePlanOption()).from(stNode).to(enNode));
+        Log.d("MainActivity","已经查询位置");
+        mSearch.destroy();
 
     }
 
