@@ -1,6 +1,7 @@
 package com.example.mymap;
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -8,6 +9,7 @@ import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -26,6 +28,9 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.search.route.RoutePlanSearch;
+import com.baidu.mapapi.
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,9 +39,9 @@ public class MainActivity extends AppCompatActivity{
     private MapView mapView;
     private TextView positionText;
     private BaiduMap baiduMap;
+    private RoutePlanSearch mSearch;
 	private LocationClientOption mOption;
     private boolean isFirstLocate = true;
-
 
     @Override
     protected void onCreate(Bundle saveInstanceState){
@@ -48,55 +53,32 @@ public class MainActivity extends AppCompatActivity{
 
         setContentView(R.layout.activity_main);
 
+        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         positionText = (TextView)findViewById(R.id.position_text_view);
         mapView=(MapView)findViewById(R.id.bmapView);
-        Button button = (Button)findViewById(R.id.check_button);
+        Button button1 = (Button)findViewById(R.id.check_button);
+        Button button2 = (Button)findViewById(R.id.daohang_button);
         //注册按钮监听
-        button.setOnClickListener(new View.OnClickListener() {
+        button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                EditText editText1 = (EditText)findViewById(R.id.weidu_edit);
-                EditText editText2 = (EditText)findViewById(R.id.jingdu_edit);
-                String weidu = editText1.getText().toString();
-                String jingdu = editText2.getText().toString();
-
-                MyLocationData.Builder locationBuilder = new MyLocationData.Builder();
-
-                locationBuilder.latitude(Double.valueOf(weidu));
-                locationBuilder.longitude(Double.valueOf(jingdu));
-                MyLocationData locationData = locationBuilder.build();
-                baiduMap.setMyLocationData(locationData);
-
-                LatLng ll = new LatLng(Double.valueOf(weidu),Double.valueOf(jingdu));
-                MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
-                baiduMap.animateMapStatus(update);
-                update = MapStatusUpdateFactory.zoomTo(16f);
-                baiduMap.animateMapStatus(update);
-
+                yingjichangkong(view);
             }
         });
 
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                qujingzheyue(view);
+            }
+        });
         baiduMap = mapView.getMap();
         baiduMap.setMyLocationEnabled(true);
 
-        //检测权限
-        List<String> permissionList = new ArrayList<>();
-        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            permissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED){
-            permissionList.add(Manifest.permission.READ_PHONE_STATE);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-            permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
-        if(!permissionList.isEmpty()){
-            String[] permissions = permissionList.toArray(new String[permissionList.size()]);
-            ActivityCompat.requestPermissions(MainActivity.this,permissions,1);
-        }
-        else{
-            requestLocation();//开始请求定位
-        }
+        quanxiangou();
+
     }
     //定位信息到达，处理地图
     private void navigateto(BDLocation location){
@@ -125,10 +107,11 @@ public class MainActivity extends AppCompatActivity{
         option.setOpenGps(true);
         option.setCoorType("bd09ll");//使用百度经纬度，默认为国家测绘局坐标，放入百度地图会有误差
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
-        option.setScanSpan(5000);
+        option.setScanSpan(5000);//定位间隔
         option.setIsNeedAddress(true);
         mLocationClient.setLocOption(option);
     }
+    //省电措施
     @Override
     public void onDestroy(){
         super.onDestroy();
@@ -145,6 +128,26 @@ public class MainActivity extends AppCompatActivity{
     public void onPause(){
         super.onPause();
         mapView.onPause();
+    }
+    //检测权限
+    private  void quanxiangou(){
+        List<String> permissionList = new ArrayList<>();
+        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            permissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED){
+            permissionList.add(Manifest.permission.READ_PHONE_STATE);
+        }
+        if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if(!permissionList.isEmpty()){
+            String[] permissions = permissionList.toArray(new String[permissionList.size()]);
+            ActivityCompat.requestPermissions(MainActivity.this,permissions,1);
+        }
+        else{
+            requestLocation();//开始请求定位
+        }
     }
     //未获取权限报错
     @Override
@@ -193,4 +196,52 @@ public class MainActivity extends AppCompatActivity{
 
         }
     }
+
+    public void yingjichangkong(View view){
+        EditText editText1 = (EditText)findViewById(R.id.weidu_edit);
+        EditText editText2 = (EditText)findViewById(R.id.jingdu_edit);
+        String weidu = editText1.getText().toString();
+        String jingdu = editText2.getText().toString();
+
+
+
+        if(weidu.isEmpty() == true || jingdu.isEmpty() == true){
+            Snackbar.make(view,"参数不能为空哦！",Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
+        MyLocationData.Builder locationBuilder = new MyLocationData.Builder();
+
+        locationBuilder.latitude(Double.valueOf(weidu));
+        locationBuilder.longitude(Double.valueOf(jingdu));
+        MyLocationData locationData = locationBuilder.build();
+        baiduMap.setMyLocationData(locationData);
+
+        LatLng ll = new LatLng(Double.valueOf(weidu),Double.valueOf(jingdu));
+        MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
+        baiduMap.animateMapStatus(update);
+        update = MapStatusUpdateFactory.zoomTo(16f);
+        baiduMap.animateMapStatus(update);
+    }
+
+    public void qujingzheyue(View view){
+
+
+        EditText editText1 = (EditText)findViewById(R.id.chufa_edit);
+        EditText editText2 = (EditText)findViewById(R.id.daoda_edit);
+        String chufa = editText1.getText().toString();
+        String daoda = editText2.getText().toString();
+
+        if(chufa.isEmpty() == true || daoda.isEmpty() == true){
+            Snackbar.make(view,"参数不能为空哦！",Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
+        Snackbar.make(view,"A接拉起！",Snackbar.LENGTH_SHORT).show();
+
+        mSearch = RoutePlanSearch.newInstance();
+
+    }
+
+
 }
